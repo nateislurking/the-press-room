@@ -1,0 +1,12 @@
+# The interval trigger for reply-shift.service. See that file for install steps.
+[Unit]
+Description=Press Room — reply shift timer
+
+[Timer]
+# Every 15 minutes. The shift is cheap and idempotent, and it composes at most a
+# few replies per run, so a short interval just keeps drafts fresh.
+OnBootSec=5min
+OnUnitActiveSec=15min
+
+[Install]
+WantedBy=timers.target

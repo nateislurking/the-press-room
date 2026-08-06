@@ -1,0 +1,13 @@
+# The daily trigger for nightly-digest.service. See that file for install steps.
+# OnCalendar is in the system's local time. Persistent=true means a run missed
+# while the machine was asleep fires at next boot, so a laptop still gets its day.
+[Unit]
+Description=Press Room — nightly digest timer
+
+[Timer]
+# EDIT THIS to the small-hours time you want the previous day written up.
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

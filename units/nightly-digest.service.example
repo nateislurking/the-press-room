@@ -1,0 +1,30 @@
+# ============================================================================
+#  The overnight digest run, as a systemd user service (Linux).
+#  Paired with nightly-digest.timer, which fires it once a day.
+#
+#  Install:
+#    mkdir -p ~/.config/systemd/user
+#    cp units/nightly-digest.service.example ~/.config/systemd/user/nightly-digest.service
+#    cp units/nightly-digest.timer.example   ~/.config/systemd/user/nightly-digest.timer
+#    # edit WorkingDirectory below, and the OnCalendar time in the .timer
+#    systemctl --user daemon-reload
+#    systemctl --user enable --now nightly-digest.timer
+#
+#  Watch it:  journalctl --user -u nightly-digest -f
+#  Keep it running while logged out:  sudo loginctl enable-linger $USER
+#
+#  --yesterday writes up the day that just ended, so a small-hours run covers the
+#  right day. Drop --send (or leave sendDailyCommand unset in your config) to build
+#  the email without dispatching it.
+# ============================================================================
+[Unit]
+Description=Press Room — nightly digest
+After=network-online.target
+
+[Service]
+Type=oneshot
+
+# EDIT THIS.
+WorkingDirectory=%h/the-press-room
+
+ExecStart=/usr/bin/env node bin/nightly.mjs --yesterday --send

@@ -1,0 +1,27 @@
+# ============================================================================
+#  The reply-lane shift, as a systemd user service (Linux).
+#  Paired with reply-shift.timer, which fires it on a short interval.
+#
+#  The shift NEVER sends. It sweeps inbound mail, composes drafts inside the jail,
+#  runs every gate, stages the passing drafts, and (if you set notifyCommand)
+#  pings you a count. You send by hand, once you have read the draft. See
+#  docs/SECURITY.md before you run this at all.
+#
+#  Install:
+#    cp units/reply-shift.service.example ~/.config/systemd/user/reply-shift.service
+#    cp units/reply-shift.timer.example   ~/.config/systemd/user/reply-shift.timer
+#    # edit WorkingDirectory below
+#    systemctl --user daemon-reload
+#    systemctl --user enable --now reply-shift.timer
+# ============================================================================
+[Unit]
+Description=Press Room — reply shift
+After=network-online.target
+
+[Service]
+Type=oneshot
+
+# EDIT THIS.
+WorkingDirectory=%h/the-press-room
+
+ExecStart=/usr/bin/env node bin/shift.mjs

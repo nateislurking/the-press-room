@@ -1,0 +1,112 @@
+{
+  "_readme": [
+    "Copy this file to press-room.config.json and edit it. Every key is optional — an empty {}",
+    "boots something that works offline (the redaction gate, the checkers, the renderers on hand-made",
+    "input). Keys starting with _ are documentation and are ignored by the loader.",
+    "Anything that reaches OUT of the repo — your transcripts, the live site, credentials, the send",
+    "command — defaults to empty/off, and the code degrades honestly rather than crashing.",
+    "Full setup in README.md; the security posture in docs/SECURITY.md."
+  ],
+
+  "_senderName": "Display name on the daily digest email.",
+  "senderName": "The Shop",
+  "_senderAddress": "From: address on the daily digest.",
+  "senderAddress": "daily@example.com",
+  "_replyAddress": "From:/Reply-To: on reply-lane answers. The lane sends ONLY as this address.",
+  "replyAddress": "replies@example.com",
+  "_ownerAddresses": "Your own addresses. HOLD/RESUME control mail is only honored from these.",
+  "ownerAddresses": ["you@example.com"],
+  "_ignoreFrom": "Service/plumbing senders that are never treated as a subscriber question.",
+  "ignoreFrom": ["support@example.com", "postmaster@example.com"],
+
+  "_siteUrl": "Your site root. Archive links point here and it is half of the reply-lane link allowlist.",
+  "siteUrl": "https://example.com",
+  "_newsletterUrl": "Where the daily footer sends people for your own longer writing.",
+  "newsletterUrl": "https://example.com/newsletter",
+  "_githubUser": "GitHub user/org whose repo permalinks a reply may cite. Empty => repo citations are refused.",
+  "githubUser": "",
+  "_subscribeEndpoint": "POST endpoint for the archive signup box. Empty => the signup box is omitted from rendered pages.",
+  "subscribeEndpoint": "",
+
+  "_model": "The brain for every contained model stage. Pin an explicit id, never an alias.",
+  "model": "claude-sonnet-5",
+
+  "_transcriptsDir": [
+    "The Claude Code transcript directory the digest harvests. Claude keys these by the session's",
+    "working directory, so a session run from a different folder lands in a different dir — see",
+    "docs/OPERATING.md. Empty => the transcript source is skipped (git + session-log sources still run)."
+  ],
+  "transcriptsDir": "",
+  "_siteProductionDir": "Where rendered archive/fixes pages are written for you to review/deploy. Empty => only ./out/ is written.",
+  "siteProductionDir": "",
+  "_publicReposDir": "Directory holding local clones of your public repos, used to verify a cited link is real.",
+  "publicReposDir": "",
+  "_fixesPage": "The public 'what changed' page build-fixes-day writes onto. Empty => derived from siteProductionDir/fixes.html, else the fixes step is skipped.",
+  "fixesPage": "",
+
+  "_worldRoot": "The folder that contains your source repos. Relative resolves against the repo root; default is the repo's parent.",
+  "worldRoot": "..",
+  "_sourceRepos": "Repos scanned for the day's git activity in the digest. path is relative to worldRoot unless absolute.",
+  "sourceRepos": [],
+  "_sourceReposExample": [{ "name": "my-app", "path": "my-app" }],
+  "_productRepos": "Subset of sourceRepos whose USER-VISIBLE changes feed the public fixes page.",
+  "productRepos": [],
+
+  "_sources": "Optional extra evidence the digest harvests. Each empty => that source is skipped.",
+  "sources": {
+    "sessionLog": "",
+    "benchLedger": "",
+    "shiftLogsDir": ""
+  },
+
+  "_publicRepos": "Public repos admitted into the reply composer's reading room. dest is where it lands; path is under publicReposDir.",
+  "publicRepos": [],
+  "_publicReposExample": [{ "dest": "repos/the-press-room", "path": "the-press-room" }],
+
+  "_dataFolders": "Internal working folders. Defaults work out of the box; change only if you must.",
+  "contractsDir": "contracts",
+  "redactionFile": "redaction/REDACTION.md",
+  "digestsDir": "digests",
+  "factsDir": "facts",
+  "receiptsDir": "receipts",
+  "outDir": "out",
+  "stagingDir": ".staging",
+  "inboxDir": "inbox",
+  "answersDir": "answers",
+  "draftsDir": "drafts",
+  "stateDir": "state",
+  "readingRoomDir": "reading-room",
+
+  "_credentials": "PATHS ONLY — never the values. You supply the files, outside the repo. Empty => that step reports missing-credential cleanly.",
+  "credentials": {
+    "jmapTokenPath": "",
+    "mailerliteKeyPath": "",
+    "resendKeyPath": "",
+    "claudeCredentialsPath": "~/.claude/.credentials.json"
+  },
+  "_mailAccountId": "Your JMAP account id (reply-lane intake and the HOLD-email brake).",
+  "mailAccountId": "",
+  "mailApiBase": "https://api.fastmail.com/jmap",
+  "_mailGroups": "The subscriber-list group names that make a sender count as a subscriber.",
+  "mailGroups": { "daily": "Daily", "general": "General" },
+  "membershipApiBase": "https://connect.mailerlite.com/api",
+  "sendProviderUrl": "https://api.resend.com/emails",
+
+  "_claudeBin": "Path to the claude binary the jail runs.",
+  "claudeBin": "/usr/bin/claude",
+  "_crashLog": "Where a dead contained spawn is recorded.",
+  "crashLog": "state/spawn-crashes.log",
+
+  "_commandHooks": [
+    "Steps that live OUTSIDE the shop shape — dispatching the daily email, the off-box heartbeat, the",
+    "phone ping. These are the machinery this repo deliberately does not ship. Give a shell command",
+    "and the orchestrator will run it; leave empty and the step is skipped and logged, never faked."
+  ],
+  "sendDailyCommand": "",
+  "beatCommand": "",
+  "notifyCommand": "",
+  "deskUrl": "",
+
+  "_timezone": "The shop's clock. All UTC->local normalization uses this one zone.",
+  "timezone": "America/Chicago"
+}

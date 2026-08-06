@@ -1,0 +1,6 @@
+# Shell scripts and systemd units must keep LF line endings — CRLF breaks bash
+# (the shebang line and `\r` at line ends cause "bad interpreter" / syntax
+# errors). Pin them to LF regardless of the checkout platform.
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf

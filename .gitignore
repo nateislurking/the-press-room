@@ -1,0 +1,46 @@
+# ============================================================================
+#  The Press Room — what never goes in git.
+#
+#  These are runtime state and raw material. The scripts recreate the folders
+#  they need on first run; nothing here is shipped.
+# ============================================================================
+
+# YOUR CONFIG. It names paths on your machine and points at your credential
+# files. Commit press-room.config.example.json instead.
+press-room.config.json
+
+# RAW, UNGATED, OR SENSITIVE-IN-PASSING material — the most important block here.
+# .staging/ holds raw transcript text; inbox/ holds quarantined inbound mail;
+# reading-room/ is the composer's rebuilt world; answers/ and drafts/ are pre-send;
+# state/ holds ledgers, the LIVE flag, crash + shift logs, and drill runs.
+.staging/
+inbox/
+reading-room/
+answers/
+drafts/
+state/
+
+# GENERATED OUTPUT — rebuilt from the committed sources.
+out/
+
+# THE GATED, PUBLISHABLE ARTIFACTS (digests/, facts/, receipts/) are meant to be
+# committed once you are happy with them, so they are NOT ignored. Uncomment to
+# keep them local instead:
+# digests/
+# facts/
+# receipts/
+
+# Your real denylist. The example ships; yours, with your names and paths, does
+# not. Comment this out if you deliberately want to publish your denylist.
+redaction/REDACTION.md
+
+# Working-root stop flags.
+PAUSE
+KILL-*
+HOLD
+HOLD-*
+
+# Junk.
+node_modules/
+.DS_Store
+*.log
