@@ -13,7 +13,7 @@ construction rather than by asking the model nicely. Two ideas do the work:
    field. A separate deterministic script — which never runs a model — pins the recipient from the
    intake record and holds the one send credential. So "make the model send somewhere" has no path:
    the thing reading the attack cannot send, and the thing that can send does not read the attack.
-2. **The gate is fail-closed and mechanical.** Every outbound reply passes ten checks. They do not ask
+2. **The gate is fail-closed and mechanical.** Every outbound reply passes eleven checks. They do not ask
    the model whether the answer is safe; they pattern-match the output. Any hit refuses the send.
 
 ## What the jail does
