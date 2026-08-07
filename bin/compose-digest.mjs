@@ -59,6 +59,9 @@ Your entire world is this folder. Read:
   source.** You have no transcripts, no repos, no network. If a fact is not in that file, it cannot
   appear in the issue — do not reach for anything you merely remember or assume.
 - \`DIGEST-WRITER-CONTRACT.md\` — the voice and the laws. They bind you. Read before writing.
+- \`PUBLIC-SURFACES.md\` — the map of every public page and repo you are allowed to link. **Read it
+  before you write the opening**, because law 8 below requires a link and this file is the only place
+  you can learn what exists. \`TONE.md\` and \`BEATS.md\` are here too, referenced by the contract.
 
 Write \`DIGEST.md\` in this folder, in exactly this shape:
 
@@ -116,7 +119,16 @@ Write \`DIGEST.md\` in this folder, in exactly this shape:
    the beat's source refuses the run.
 ${SITE_HOST ? `8. **Link the day's public face.** The topic hook must carry at least one link to your public site (\`${SITE_HOST}\`), not only to a code host — see PUBLIC-SURFACES.md for the map of what may be linked.` : ''}
 
-Write the file, then stop. Output nothing else — the file is your deliverable.
+${SITE_HOST ? `8. **The issue MUST carry at least one in-body markdown link, and at least one of them MUST point
+   at \`https://${SITE_HOST}/…\` (checked mechanically — this is the law that most often refuses a
+   day).** The topic hook carries it: when the day's work has a public face, link that face. An
+   off-site link alone does NOT satisfy this — a code host answers "where is the code," the site
+   answers "where can I see it," and the issue owes the reader both. **Link only a surface listed in
+   \`PUBLIC-SURFACES.md\`** — a guessed or remembered path is checked against the real published tree
+   and refuses the run. If nothing from the day has a matching public page, link the closest true one
+   (the archive, or the relevant product page) rather than shipping no link at all.
+
+` : ''}Write the file, then stop. Output nothing else — the file is your deliverable.
 `;
 
 const room = join(STAGING, `compose-room-${DATE}`);

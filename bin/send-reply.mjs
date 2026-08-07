@@ -29,6 +29,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlink
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { config, dir, path as cfgPath, redactionPath, tz } from '../lib/config.mjs';
+// The ONE redaction scanner. See the note on G8 in redactionHits().
+import { loadLists as gateLoadLists, scan as gateScan } from './gate.mjs';
 
 const INBOX = dir('inboxDir');
 const DRAFTS = dir('draftsDir');
@@ -124,6 +126,24 @@ function redactionHits(body) {
     if (!allowDollar.has(whole)) hits.push(`dollar figure $${m[1]} outside locked set`);
   }
   for (const re of regexes) if (re.test(body)) hits.push(`deny-regex ${re}`);
+
+  // ★ THE SHARED SCANNER — everything above is this file's OWN reimplementation of the redaction
+  // rules, and it had drifted BELOW the digest's. It parsed 3 of the denylist's 5 rule types and
+  // skipped `deny-scope:` (out-of-scope subject matter), `allow-email:`, and the app-password shapes,
+  // with looser sk-/Bearer/token thresholds besides. The docs said both pipelines shared one gate;
+  // the pipeline answering UNTRUSTED MAIL FROM STRANGERS was running the weaker one.
+  //
+  // Rather than copy the missing rules down here — which would re-create the divergence somewhere new
+  // and leave two things to keep in sync forever — G8 now runs gate.mjs's ACTUAL scanner. The local
+  // rules above are KEPT deliberately: they are a second opinion on the same body, and swapping a
+  // working check for a different one trades one gap for another. Belt and suspenders; one source of
+  // truth for the belt.
+  try {
+    for (const h of gateScan(body, gateLoadLists())) hits.push(`shared-gate [${h.rule}] ${h.match}`);
+  } catch (e) {
+    // A scanner that cannot run is not a scanner that passed. Fail closed, loudly.
+    hits.push(`shared-gate UNAVAILABLE (fail-closed): ${e.message}`);
+  }
   return hits;
 }
 

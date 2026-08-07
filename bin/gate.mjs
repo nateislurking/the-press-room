@@ -8,9 +8,19 @@
 // Denylist single source: the redaction file (see config.redactionFile). Its deny: / allow-email: /
 // allow-dollar: / deny-scope: / deny-regex: lines are parsed live, so an edit there IS an edit here.
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { redactionPath } from '../lib/config.mjs';
 
-function loadLists() {
+// ★ EXPORTED so this repo has exactly ONE redaction scanner.
+// send-reply.mjs used to carry a second, independent implementation of these rules. It parsed three
+// of the denylist's five rule types and silently skipped `deny-scope:` (out-of-scope subject matter),
+// `allow-email:`, and the app-password shapes, with looser thresholds on the rest — so the pipeline
+// answering untrusted mail from strangers ran the WEAKER gate while the docs said both pipelines
+// shared one. Two implementations of one rule set is a divergence with nothing to catch it; the only
+// durable fix is that there is only one. Importing this module must not run the CLI, hence the
+// entry-point guard at the bottom.
+export function loadLists() {
   const txt = readFileSync(redactionPath(), 'utf8');
   const names = [], emails = [], dollars = new Set(), scope = [], regexes = [];
   for (const line of txt.split('\n')) {
@@ -30,7 +40,7 @@ function loadLists() {
   return { names, emails, dollars, scope, regexes };
 }
 
-function scan(text, lists) {
+export function scan(text, lists) {
   const hits = [];
   const push = (rule, m, line) => hits.push({ rule, match: String(m).slice(0, 60), line });
   const lines = text.split('\n');
@@ -130,6 +140,10 @@ function selfTest(lists) {
   return ok;
 }
 
+// Only run the CLI when this file IS the entry point. Without this guard, importing loadLists/scan
+// (which send-reply.mjs now does) would execute the block below and exit(2) on "usage".
+const isEntryPoint = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isEntryPoint) {
 const args = process.argv.slice(2);
 const lists = loadLists();
 if (args[0] === '--self-test') {
@@ -149,3 +163,4 @@ for (const f of args) {
 }
 if (total) { console.log('GATE: FAIL CLOSED — this day does not publish. Raise it.'); process.exit(1); }
 process.exit(0);
+}
