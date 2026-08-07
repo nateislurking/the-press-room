@@ -44,7 +44,26 @@ Opening paragraph.                    ← counts (N commits, N files, N repos) l
 ```
 
 - **dek**: one sentence, 140–165 chars (168 hard max), naming the day's turns in sequence. No kicker.
-- **tags**: pick from your tag vocabulary (see the tag block in `bin/build-site-archive.mjs`).
+- **tags**: one to three slugs, space-separated, from this vocabulary and no other. It is written out
+  here rather than pointed at, because you are contained: `bin/` is not in your room and a reference
+  you cannot open reads as satisfied while doing nothing. Anything outside this list is dropped by the
+  archive builder with a warning.
+
+  | slug | what it covers |
+  |---|---|
+  | `owned-misses` | the day the shop got something wrong and said so |
+  | `debugging` | chasing a fault to its cause |
+  | `machines` | the agents themselves — how they behave, what changed about them |
+  | `agents` | background workers: spawning, supervising, integrating them |
+  | `verification` | checks, gates, tests, proofs |
+  | `security` | permissions, containment, redaction, credentials |
+  | `infrastructure` | the boxes, services, timers, and plumbing underneath |
+  | `shipping` | releases, builds, things reaching people |
+  | `design` | days spent deciding rather than building |
+  | `milestones` | the big ones |
+  | `unattended` | shifts that ran with nobody watching |
+
+  *(This table and `TAG_LABEL` in `bin/build-site-archive.mjs` must agree — `check.js` asserts it.)*
 
 ## The laws that bind every line
 

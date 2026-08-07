@@ -84,6 +84,8 @@
     "resendKeyPath": "",
     "claudeCredentialsPath": "~/.claude/.credentials.json"
   },
+  "_mailboxProvider": "HARD REQUIREMENT, not a preference. Reply-lane intake speaks Fastmail JMAP and nothing else, and list membership is MailerLite. 'fastmail' is the only accepted value; anything else makes bin/intake-sweep.mjs refuse with an explanation instead of a JMAP error. Supporting another mailbox is a code change. The daily SEND is a config hook (sendDailyCommand) and is not affected by this.",
+  "mailboxProvider": "fastmail",
   "_mailAccountId": "Your JMAP account id (reply-lane intake and the HOLD-email brake).",
   "mailAccountId": "",
   "mailApiBase": "https://api.fastmail.com/jmap",

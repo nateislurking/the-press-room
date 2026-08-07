@@ -7,8 +7,14 @@
 //
 // The pipeline (mirrors harvest -> compose -> gate):
 //   node bin/receipts.mjs 2026-07-29        -> .staging/2026-07-29.receipt-draft.md
-//   [contained curator, per contracts/CURATOR-CONTRACT.md] -> receipts/2026-07-29.md
+//   [ the curate step — BY HAND today ]     -> receipts/2026-07-29.md
 //   node bin/gate.mjs receipts/2026-07-29.md  -> MUST exit 0 before the file is committed/published
+//
+// ⚠ THE MIDDLE STAGE IS NOT BUILT. contracts/CURATOR-CONTRACT.md describes a contained curator that
+// would do it, and nothing in this repo spawns a model against that contract — no script, not the
+// nightly run. This file writes the draft and stops. You curate it yourself, then gate it. Do not
+// skip the gate: receipts/ is admitted into the reply composer's reading room, so whatever lands
+// there is quotable at strangers. See docs/ARCHITECTURE.md.
 // Time law: UTC -> your configured zone here, once, same as harvest.
 
 import fs from 'node:fs';
@@ -79,3 +85,9 @@ fs.mkdirSync(STAGING, { recursive: true });
 const outPath = join(STAGING, `${DATE}.receipt-draft.md`);
 fs.writeFileSync(outPath, lines.join('\n'));
 console.log(`${DATE}  turns:${turns.length} sessions:${new Set(turns.map((t) => t.session)).size} topics:${topics.length}  -> .staging/${DATE}.receipt-draft.md (${Math.round(fs.statSync(outPath).size / 1024)} KB)`);
+console.log('');
+console.log('This is a RAW DRAFT, not a publishable receipt. The curate step is not automated:');
+console.log(`  1. read .staging/${DATE}.receipt-draft.md and cut it down yourself`);
+console.log('     (contracts/CURATOR-CONTRACT.md is the standard to curate to)');
+console.log(`  2. write the result to ${config.receiptsDir}/${DATE}.md`);
+console.log(`  3. node bin/gate.mjs ${config.receiptsDir}/${DATE}.md   <- must exit 0 before you publish`);

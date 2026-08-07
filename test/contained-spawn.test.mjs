@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { readFileSync, existsSync } from 'node:fs';
-import { spawnContained } from '../lib/contained-spawn.mjs';
+import { spawnContained, DEFAULT_DENY } from '../lib/contained-spawn.mjs';
 import { config, path as cfgPath } from '../lib/config.mjs';
 
 const CRASH_LOG = cfgPath(config.crashLog || 'state/spawn-crashes.log');
@@ -54,4 +54,32 @@ test('the throw points at the full capture, so nobody has to know it exists', ()
   assert.ok(msg.includes(CRASH_LOG),
     'the error must name the crash log — the evidence is worthless if the person reading the failure ' +
     'does not know it was written');
+});
+
+// --- the belt-and-suspenders permission profile ------------------------------------------------
+//
+// DEFAULT_DENY exists for one scenario: the jail is bypassed or unavailable, and the permission layer
+// is all that is left. Every entry shipped with a DOUBLED leading slash (`Read(//home/...)`, and the
+// hand-written `//proc/**`, `//etc/shadow`) because HOME and ROOT are already absolute and the
+// template added another. Whether the matcher normalizes `//` is unconfirmed — which is the point:
+// this list is only load-bearing when nothing else is working, so it does not get to be approximate.
+test('every DEFAULT_DENY path is a well-formed absolute path', () => {
+  const paths = DEFAULT_DENY
+    .map((r) => (r.match(/^[A-Za-z]+\((.+)\)$/) || [])[1])
+    .filter(Boolean);
+  assert.ok(paths.length >= 6, 'expected the path-bearing deny rules to still be there');
+  for (const p of paths) {
+    assert.ok(!p.includes('//'), `DEFAULT_DENY carries a doubled slash: ${p}`);
+    assert.ok(p.startsWith('/'), `DEFAULT_DENY entry is not absolute: ${p}`);
+  }
+});
+
+test('DEFAULT_DENY still covers the trees it names', () => {
+  const joined = DEFAULT_DENY.join(' ');
+  for (const must of ['/.claude/', '/.ssh/', '/proc/**', '/etc/shadow']) {
+    assert.ok(joined.includes(must), `DEFAULT_DENY no longer denies ${must}`);
+  }
+  for (const tool of ['WebFetch', 'WebSearch', 'Bash', 'Task']) {
+    assert.ok(DEFAULT_DENY.includes(tool), `DEFAULT_DENY no longer denies the ${tool} tool`);
+  }
 });

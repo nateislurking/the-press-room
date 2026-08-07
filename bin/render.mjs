@@ -2,7 +2,7 @@
 // render.mjs — stage 5, deterministic. digests/<date>.md -> out/<date>.html
 // digest.md conventions:
 //   # <headline>
-//   <!-- meta: date=YYYY-MM-DD reconstructed=true|false kicker="..." dek="..." -->
+//   <!-- meta: date=YYYY-MM-DD reconstructed=true|false dek="..." tags="slug slug" -->
 //   normal paragraphs / ## sections / **bold** *em* `code` [links](url)
 //   a paragraph starting "**Steal this if it's useful:**"  -> the steal-this card
 //   ## From the microphone   -> the microphone card: "> quote" (operator, rust) / ">> quote"
@@ -41,13 +41,12 @@ const inline = (s) => esc(s)
   .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" style="color:#0077C0;text-decoration:none;">$1</a>');
 
 // ---- parse ---------------------------------------------------------------
-let headline = 'From the shop floor', kicker = 'From the shop', dek = '';
+let headline = 'From the shop floor', dek = '';
 const sections = [{ name: null, blocks: [] }];
 for (const raw of md.split('\n')) {
   const line = raw.trimEnd();
   const meta = line.match(/<!--\s*meta:\s*(.*?)-->/);
   if (meta) {
-    const k = meta[1].match(/kicker="([^"]*)"/); if (k) kicker = k[1];
     const d = meta[1].match(/dek="([^"]*)"/); if (d) dek = d[1];
     continue;
   }

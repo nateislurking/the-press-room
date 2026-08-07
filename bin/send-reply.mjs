@@ -393,7 +393,7 @@ async function selfTest() {
   const A = (over) => ({ schema: 'reply-lane/answer@1', intake_id: 'SELFTEST-INTAKE-1', subject: 'Re: the gate', body_md: good, ...over });
   const skKey = asm('sk', '-', 'A1b2C3d4', 'E5f6G7h8', 'I9j0K1l2', 'M3n4');
   const reKey = asm('re', '_', 'A1b2C3d4', 'E5f6G7h8', 'I9j0K1l2');
-  const forgePath = asm('/', 'home/', 'someone', '/vault/x.key');
+  const plantedKeyPath = asm('/', 'home/', 'someone', '/vault/x.key');
   const cases = [
     ['clean answer passes', A({}), true],
     ['off-domain link refused', A({ body_md: good.replace(`${SITE}/archive`, 'https://evil.example.org/x') }), false],
@@ -401,12 +401,20 @@ async function selfTest() {
     ['our own quoted block reused passes', { ...A({}), intake_id: 'SELFTEST-QUOTED-1', body_md: good + ' To restate it: the billing gauge reflects the actual bill while the usage estimate runs on list price math and will drift from it.' }, true],
     ['subscriber text still refused when a quote block follows', { ...A({}), intake_id: 'SELFTEST-QUOTED-1', body_md: 'You asked whether the colour work of the nineteen thirties maps onto our own gauges at all, and here is the answer at length with plenty of words to clear the size floor for this gate.\n\n' + good.slice(0, 160) }, false],
     ['denylist name refused', A({ body_md: good.replace('Great question', asm('Great question from our friend Marigold', ' Thornbury')) }), false],
-    ['absolute path refused', A({ body_md: good.replace('Great question', `The key sits at ${forgePath}. Great question`) }), false],
+    ['absolute path refused', A({ body_md: good.replace('Great question', `The key sits at ${plantedKeyPath}. Great question`) }), false],
     ['sk key refused', A({ body_md: good.replace('Great question', `Our key is ${skKey}. Great question`) }), false],
     ['re key refused', A({ body_md: good.replace('Great question', `Sends ride ${reKey}. Great question`) }), false],
     ['commit sha allowed (receipt, not secret)', A({ body_md: good + ' The fix landed in commit a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0, tracked in the open.' }), true],
     ['deny-regex refused', A({ body_md: good.replace('Great question', asm('Internally ', 'seat', ' = ', 'tank', ' + margin. Great question')) }), false],
     ['off-set dollar figure refused', A({ body_md: good.replace('Great question', asm('It costs us ', '$', '37', ' per month. Great question')) }), false],
+    // ★ THE TWO CASES THAT ONLY THE SHARED SCANNER CATCHES. This file's own local rules parse three of
+    // the denylist's five rule types; `deny-scope:` and `allow-email:` are the two they never see. Both
+    // of the bodies below scored ZERO under the old local-only G8 and shipped clean. They are here so
+    // that if anyone ever unwires the gate.mjs import, the self-test says so instead of going quiet.
+    ['out-of-scope subject refused (deny-scope — shared scanner only)',
+      A({ body_md: good.replace('Great question', 'We went over this on the discovery call. Great question') }), false],
+    ['off-list email refused (allow-email — shared scanner only)',
+      A({ body_md: good.replace('Great question', 'Write to contact@somebody-else.example instead. Great question') }), false],
     ['real archive issue cited passes', A({ body_md: good.replace(`${SITE}/archive`, `${SITE}/archive/2026-07-26.html`) }), true],
     ['archive cited at end of sentence passes (trailing period stripped)', A({ body_md: good.replace(`${SITE}/archive for how it lands in practice`, `${SITE}/archive/2026-07-26.html. It lands cleanly`) }), true],
     ['bogus archive day refused', A({ body_md: good.replace(`${SITE}/archive`, `${SITE}/archive/2026-99-99.html`) }), false],

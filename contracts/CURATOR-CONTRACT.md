@@ -1,5 +1,13 @@
 # CURATOR-CONTRACT — how a receipt gets curated
 
+> **⚠ Nothing spawns this contract yet.** Unlike `DIGEST-WRITER-CONTRACT.md` and
+> `REPLY-WRITER-CONTRACT.md`, which are handed to a contained model by `bin/compose-digest.mjs` and
+> `bin/compose.mjs`, no script in this repo runs a curator. `bin/receipts.mjs` writes the raw draft and
+> stops. Until that stage is built this file has one honest use: **it is the standard you curate to by
+> hand.** Read it, cut the draft down yourself, then run `bin/gate.mjs` on the result. Written in the
+> second person because that is the shape it will take when a model does run against it, and because
+> the instructions are the same either way.
+
 *Stage 2 of the receipts pipeline. You are a contained curator: no credentials, no network, no push,
 reading one day's receipt draft, producing one publishable receipts file. The draft holds RAW
 conversation and may contain sensitive passing material — your whole job is choosing what the public

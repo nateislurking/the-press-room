@@ -48,9 +48,30 @@ sources ─► harvest ─► .staging/<date>.candidates.json
 - **`render`** and **`build-site-archive`** are deterministic and hold no model. They turn the typed
   issue into an email and a set of web pages.
 
-Two ancillary pipelines share the same shape: **receipts** (`receipts` → a contained curator →
-`gate`) publishes the conversation record behind each issue, and **fixes** (`build-fixes-day`) writes a
-user-facing "what changed" row onto a public page from your product commits.
+Two ancillary pipelines share the same shape. **fixes** (`build-fixes-day`) writes a user-facing "what
+changed" row onto a public page from your product commits, and ships complete.
+
+**receipts** is the one place where this repo describes more than it ships, so it is worth being exact
+about. `bin/receipts.mjs` assembles one day's full conversation into a *draft* under `.staging/` and
+stops there. The middle stage — a contained curator that reads the raw draft and decides what the
+public record shows — is **designed and not built**: `contracts/CURATOR-CONTRACT.md` is written and is
+a fair description of the job, but no script spawns a model against it. Nothing in the nightly run
+calls it, and `bin/nightly.mjs` does not touch receipts at all.
+
+So the working shape today is:
+
+```
+bin/receipts.mjs  ->  .staging/<date>.receipt-draft.md  ->  [ YOU, by hand ]  ->  receipts/<date>.md
+                                                                                        |
+                                                                       node bin/gate.mjs receipts/<date>.md
+```
+
+The draft is raw conversation and lives in `.staging/`, which is gitignored, because it may hold
+sensitive material in passing. Curating it yourself and running the gate on the result is a perfectly
+good workflow — it is how the pipeline is meant to be used until the stage exists. What you must not do
+is skip the gate: `receipts/` is admitted into the reply composer's reading room
+(`bin/build-reading-room.mjs`), so anything you put there is quotable by the machine that answers
+strangers.
 
 ## Machine 2 — the reply lane
 
@@ -61,6 +82,11 @@ Three hops, three trust zones:
 | **A · Intake** (`intake-sweep`) | reader | a read-only mail token | a typed intake record; the body **quarantined**, never interpreted |
 | **B · Compose** (`compose`, in the jail) | contained | nothing — no keys, no network, no tree | a typed answer, with **no recipient field** |
 | **C · Gate + Send** (`send-reply`) | the one door out | the send credential | the sent answer + a ledger row |
+
+The intake record's schema is `reply-lane/intake@1`. A fully documented specimen ships at
+[`examples/intake-record.example.json`](../examples/intake-record.example.json) — the only producer is
+`intake-sweep`, which needs a live credential, so the fixture is there to let you read the shape and
+drive the lane offline.
 
 The composer's world is `reading-room/`, rebuilt every run by `build-reading-room` from an explicit
 allowlist of published sources (your rendered issues, digests, gate-passed facts and receipts, your
@@ -78,7 +104,7 @@ out before the archive was live, the first subscriber to reply would be answered
 404 while the pages caught up. Publishing first closes that window. The order is enforced in one file,
 not implied by a schedule.
 
-## The ten gates (in `send-reply.mjs`, in order)
+## The eleven gates (in `send-reply.mjs`, in order)
 
 `G0` liveness · `G1` HOLD (file + email) · `G2` intake resolves, recipient pinned · `G3` sender is a
 subscriber · `G4` not already answered · `G5` under the daily cap · `G6` links on the allowlist ·

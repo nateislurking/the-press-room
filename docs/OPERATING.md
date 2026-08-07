@@ -10,14 +10,20 @@ you turn on the send path. This is the day-to-day.
 | **Node.js** | 18 or newer. No packages to install — standard library only. |
 | **Claude Code** | Installed and signed in, for the model stages. If `claude` runs in your terminal, you're set; otherwise set `claudeBin` in your config. |
 | **bubblewrap** (`bwrap`) | For the jail. Linux; see `SECURITY.md` for the kernel setting it needs. The deterministic stages don't use it. |
-| **A mailbox + a subscriber list + a send provider** | Only for the reply lane and the email dispatch. The digest's web archive needs none of it. |
+| **Fastmail + MailerLite** | ⚠ **Hard requirement for the reply lane, not a preference.** Intake is JMAP written against Fastmail (`bin/intake-sweep.mjs`), and list membership is MailerLite. Neither is a config hook — using another mailbox or list is a code change, and `intake-sweep` refuses to start against anything else. |
+| **A send provider** | The daily dispatch and the reply send. This one *is* pluggable: `sendDailyCommand` is a shell hook you point at your own script, so any provider works. |
+
+**The digest's web archive needs none of that row.** Harvest, select, compose, render, the archive, the
+gates and every checker run with no mailbox, no list and no send credential at all. If you only want
+the daily journal and its public archive, stop reading at the end of "The digest, by hand"; the reply
+lane is a separate machine you can leave switched off forever.
 
 ## First run
 
 ```bash
 node check.js                          # consistency checker — should pass on a clean clone
 node bin/gate.mjs --self-test          # the redaction gate refuses what it must
-node bin/send-reply.mjs --self-test    # the send door's ten gates (self-contained temp fixtures)
+node bin/send-reply.mjs --self-test    # the send door's eleven gates (self-contained temp fixtures)
 node --test test/*.test.mjs            # the unit tests
 bash examples/render-a-sample-issue.sh # render a real issue with no model in the loop
 cp press-room.config.example.json press-room.config.json
@@ -42,20 +48,36 @@ protects. A denylist you did not write is a denylist that protects nothing.
 
 ## The digest, by hand
 
+**Set `sourceRepos` first.** `harvest` reads the day's git activity out of the repos you list there,
+and it ships empty — with nothing listed there is no material, and the failure does not surface until
+the *compose* stage refuses with a message about the day being empty, which reads like a different
+problem entirely. Add at least one:
+
+```json
+"worldRoot": "..",
+"sourceRepos": [{ "name": "my-app", "path": "my-app" }]
+```
+
+`path` is relative to `worldRoot` unless absolute. Then pick a date you actually worked:
+
 ```bash
-node bin/harvest.mjs 2026-08-06        # one day of raw material -> .staging (gitignored)
-node bin/select.mjs  2026-08-06        # pick work + beats (jailed model), then gate
-node bin/compose-digest.mjs 2026-08-06 # write the issue (jailed model), then gate
-node bin/render.mjs 2026-08-06 --web   # -> out/web/2026-08-06.html
+node bin/harvest.mjs 2026-08-12        # one day of raw material -> .staging (gitignored)
+node bin/select.mjs  2026-08-12        # pick work + beats (jailed model), then gate
+node bin/compose-digest.mjs 2026-08-12 # write the issue (jailed model), then gate
+node bin/render.mjs 2026-08-12 --web   # -> out/web/2026-08-12.html
 node bin/build-site-archive.mjs        # wrap every issue in site chrome -> your archive dir
 ```
 
 Or all of it in the ruled order:
 
 ```bash
-node bin/nightly.mjs --date 2026-08-06 # review -> write -> publish web -> build email
+node bin/nightly.mjs --date 2026-08-12 # review -> write -> publish web -> build email
 node bin/nightly.mjs --yesterday --send # what the timer runs: the day just ended, and dispatch
 ```
+
+⚠ **Not `2026-08-06`.** `examples/render-a-sample-issue.sh` — which the README has you run first —
+writes `digests/2026-08-06.md`, and the compose stage refuses to overwrite an issue that already
+exists. Use any other date, or delete the sample issue before reusing that one.
 
 **The three stops** (files in the working root): `PAUSE` stands every run down; `KILL-<date>` kills one
 day; `HOLD-<date>` composes the day but publishes nothing, for your review — release it with
@@ -95,11 +117,22 @@ The scheduled version is `node bin/shift.mjs`: it sweeps, composes, gates, and s
 
 ## Health checks you can run any time
 
+Standalone — these need nothing but Node, and work on a fresh clone:
+
 ```bash
+node check.js
 node bin/gate.mjs --self-test
 node bin/send-reply.mjs --self-test
 node bin/check-attribution.mjs --self-test
-node bin/compose.mjs --probe           # the containment probe (needs bwrap + claude)
+node --test test/*.test.mjs
 node bin/drill.mjs --dry-run           # the drill harness end to end, 0 model spawns
-node check.js
+```
+
+Needs more than Node:
+
+```bash
+node bin/build-reading-room.mjs        # ← FIRST. --probe spawns INTO the reading room, and there
+                                       #   is no room on a fresh clone. Without this you get a
+                                       #   "no reading room" error that reads like a bug.
+node bin/compose.mjs --probe           # the containment probe — needs bwrap AND a claude binary
 ```

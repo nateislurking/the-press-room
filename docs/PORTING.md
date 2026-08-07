@@ -55,3 +55,19 @@ By design, this repo omits the private shop's send-and-notify plumbing (the actu
 the send credential and the phone-ping channel). Those are the `sendDailyCommand`, `beatCommand`, and
 `notifyCommand` config hooks: point them at your own scripts. Empty hooks mean the step is skipped and
 logged, never faked.
+
+## One difference that is deliberate, not drift
+
+`out/` is **gitignored here and tracked in the shop this came from.** If you diff the two trees looking
+for divergence, that one is intentional and should stay.
+
+The reason they differ is that the folder answers a different question in each place. In the origin
+shop, `out/<date>.html` is the rendered email — the only local record of what subscribers actually
+received, so it is worth keeping in version control. In this repo it is regenerated output: a person
+taking this code has no reason to receive somebody else's back-issues, and `bin/render.mjs` rebuilds
+any of it from the committed `digests/` source on demand.
+
+The general rule behind it: **committed here means "a taker needs this."** `digests/`, `facts/`, and
+`receipts/` are not ignored, because they are the gated, publishable record and a taker may well want
+to keep their own. `out/`, `.staging/`, `state/`, `inbox/`, `drafts/`, `answers/`, and
+`reading-room/` are ignored, because they are either regenerable or raw.

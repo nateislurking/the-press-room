@@ -146,7 +146,12 @@ else if (!SEND) log('  build only — pass --send to dispatch via config.sendDai
 else if (!config.sendDailyCommand) log('  no config.sendDailyCommand set — email rendered to out/, NOT dispatched (this repo does not hold your send credential)');
 else {
   try {
-    const out = run('bash', ['-c', `${config.sendDailyCommand} "$1"`, 'send', DATE]);
+    // The hook is handed the date, the From: address, and the display name — "$1" "$2" "$3". It used
+    // to receive only the date, which left config.senderAddress documented, defaulted, and read by
+    // nothing: your hook script had to carry its own copy of the From: address, and the two could
+    // drift with nothing to catch it. A hook that ignores the extra arguments still works.
+    const out = run('bash', ['-c', `${config.sendDailyCommand} "$1" "$2" "$3"`,
+      'send', DATE, config.senderAddress, config.senderName]);
     for (const l of out.trim().split('\n')) if (l) log('  ' + l);
   } catch (e) { die('step 4 (send command) failed', (e.stdout || '') + (e.stderr || '')); }
 }

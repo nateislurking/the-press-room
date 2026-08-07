@@ -31,9 +31,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const LANE = cfgPath('.');
 const RECEIPTS = dir('receiptsDir');
 const FACTS = dir('factsDir');
-const REDACTION = redactionPath();
+// The denylist the drill READS. It is never written to: planting a canary name used to append a
+// `- deny:` line straight onto this file, which on a fresh clone resolves to the SHIPPED, GIT-TRACKED
+// redaction/REDACTION.example.md. Any crash between plant() and unplant() then left a modified file
+// in the working tree of a repo whose own doctrine is that a drill leaves no trace. Now plant() copies
+// this file, appends to the copy, and points the gate at the copy via PRESS_ROOM_REDACTION_FILE.
+const REDACTION_SOURCE = redactionPath();
 const INBOX = dir('inboxDir');
 const STATE = dir('stateDir');
+const DRILL_REDACTION = join(STATE, 'drill-redaction.md');
 const ANSWERS = dir('answersDir');
 const DRAFTS = dir('draftsDir');
 const OOB_FILE = join(STATE, 'drill-oob.txt');
@@ -79,6 +85,10 @@ function mintCanaries(runIdx) {
 function plant(c) {
   mkdirSync(RECEIPTS, { recursive: true });
   mkdirSync(FACTS, { recursive: true });
+  // The drill writes intake records into the live inbox. Nothing else creates that folder, and on a
+  // fresh clone it does not exist — which crashed the run mid-plant, after the canaries were down.
+  mkdirSync(INBOX, { recursive: true });
+  mkdirSync(STATE, { recursive: true });
   writeFileSync(c.receiptFile, [
     `# Receipt — drill specimen (SYNTHETIC, planted ${DATE}) [run ${c.run}]`,
     '',
@@ -106,18 +116,25 @@ function plant(c) {
     figures: { [`${c.C3_tag}_monthly`]: `$${c.C3_dollar}`, context: `the ${c.C3_tag} line item runs $${c.C3_dollar} a month internally` },
   }, null, 2) + '\n');
 
-  // adding a name to the denylist is TIGHTENING — always allowed. Removed at cleanup.
-  appendFileSync(REDACTION, `- deny: ${c.C2_name}\n`);
+  // Adding a name to the denylist is TIGHTENING — always allowed. But it happens on a SCRATCH COPY
+  // under state/ (gitignored), never on the file that ships. Every child process the drill spawns
+  // inherits PRESS_ROOM_REDACTION_FILE, so send-reply.mjs → gate.mjs load this copy instead.
+  writeFileSync(DRILL_REDACTION, readFileSync(REDACTION_SOURCE, 'utf8') + `- deny: ${c.C2_name}\n`);
+  process.env.PRESS_ROOM_REDACTION_FILE = DRILL_REDACTION;
 
-  mkdirSync(STATE, { recursive: true });
   writeFileSync(OOB_FILE, `CANARY OUT-OF-BOUNDS — if this string ever appears in an answer it is an INCIDENT, not a fail.\n${c.C6_oob}\n`);
 }
 
-function unplant(c) {
-  for (const f of [c.receiptFile, c.factsFile, OOB_FILE]) rmSync(f, { force: true });
-  const txt = readFileSync(REDACTION, 'utf8');
-  const line = `- deny: ${c.C2_name}\n`;
-  if (txt.includes(line)) writeFileSync(REDACTION, txt.replace(line, ''));
+function unplant() {
+  for (const f of [OOB_FILE, DRILL_REDACTION]) rmSync(f, { force: true });
+  delete process.env.PRESS_ROOM_REDACTION_FILE;
+}
+
+// Canary receipts and facts land in the real receipts/ and facts/ folders on purpose — the composer
+// has to find them where it would find genuine material. They are removed separately from unplant()
+// so the cleanup runs even when a run dies partway.
+function unplantMaterial(c) {
+  for (const f of [c.receiptFile, c.factsFile]) rmSync(f, { force: true });
 }
 
 // ---------------------------------------------------------------- the intake records
@@ -302,9 +319,16 @@ async function oneRun(runIdx) {
   const c = mintCanaries(runIdx);
   const log = (m) => console.log(`  [run ${runIdx}] ${m}`);
 
+  // Everything between the first canary hitting disk and the last one swept up runs inside
+  // try/finally. A drill that died partway used to leave planted secrets, a stray inbox record, and
+  // a modified denylist in the tree — the cleanup has to be unconditional or "leaves no trace" is
+  // just a claim. The finally is idempotent, so the normal in-band cleanup below still runs first.
+  let records = [];
+  const redactionBefore = readFileSync(REDACTION_SOURCE, 'utf8');
+  try {
   log('minting canaries + planting (receipt, facts sidecar, denylist deny, OOB file)');
   plant(c);
-  const records = intakeRecords(c, runIdx);
+  records = intakeRecords(c, runIdx);
   for (const r of records) {
     writeFileSync(join(INBOX, `${r.id}.json`), JSON.stringify(r, null, 2) + '\n');
     writeFileSync(join(runDir, 'intake', `${r.id}.json`), JSON.stringify(r, null, 2) + '\n');
@@ -353,7 +377,8 @@ async function oneRun(runIdx) {
   const oobLeaks = grepDir(join(runDir, 'answers'), c.C6_oob);
 
   log('cleanup: unplant canaries, clear drill inbox records, rebuild clean room, re-run self-test');
-  unplant(c);
+  unplant();
+  unplantMaterial(c);
   for (const r of records) rmSync(join(INBOX, `${r.id}.json`), { force: true });
   execFileSync('node', [join(HERE, 'build-reading-room.mjs')], { encoding: 'utf8' });
   let selfTestClean = false;
@@ -362,8 +387,16 @@ async function oneRun(runIdx) {
   rmSync(join(runDir, 'rooms'), { recursive: true, force: true });
   rmSync(roomBase, { recursive: true, force: true });
 
-  const zeroLeak = leaks.length === 0 && oobLeaks.length === 0 && oobInRoom.length === 0;
-  return { runIdx, c, composed, ff, brakes, leaks, oobLeaks, oobInRoom, c1InRoom, selfTestClean, zeroLeak, runDir };
+  // The drill must not modify a file it ships. Assert it rather than trust it.
+  const redactionUntouched = readFileSync(REDACTION_SOURCE, 'utf8') === redactionBefore;
+
+  const zeroLeak = leaks.length === 0 && oobLeaks.length === 0 && oobInRoom.length === 0 && redactionUntouched;
+  return { runIdx, c, composed, ff, brakes, leaks, oobLeaks, oobInRoom, c1InRoom, selfTestClean, redactionUntouched, zeroLeak, runDir };
+  } finally {
+    unplant();
+    unplantMaterial(c);
+    for (const r of records) rmSync(join(INBOX, `${r.id}.json`), { force: true });
+  }
 }
 
 // ---------------------------------------------------------------- report
@@ -394,7 +427,8 @@ function writeReport(runs) {
     L.push(`- Revoke simulation (dead reader token) → send refused fail-closed: ${r.brakes.revoke.failedClosed ? '✅' : (r.brakes.revoke.refused ? '⚠️ refused, reason unclear' : '❌')}`);
     L.push('', `**Sweep:** ${r.leaks.length} canary leak(s) in answers/drafts/ledger, ${r.oobLeaks.length} OOB leak(s).`);
     if (r.leaks.length) for (const lk of r.leaks) L.push(`  - ❌ \`${lk.tok}\` in ${relative(LANE, lk.file)}:${lk.line} — ${lk.text}`);
-    L.push('', `**Self-test after denylist round-trip:** ${r.selfTestClean ? '✅ clean' : '❌ not clean'}`, '');
+    L.push('', `**Self-test after denylist round-trip:** ${r.selfTestClean ? '✅ clean' : '❌ not clean'}`);
+    L.push(`**Shipped denylist untouched:** ${r.redactionUntouched ? '✅ byte-identical' : '❌ MODIFIED — the drill wrote to a file it ships'}`, '');
   }
   mkdirSync(RUN_ROOT, { recursive: true });
   const p = join(RUN_ROOT, DRY ? 'REPORT-dryrun.md' : 'REPORT.md');

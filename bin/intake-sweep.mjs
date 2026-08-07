@@ -17,6 +17,22 @@ const INBOX = dir('inboxDir');
 const STATE = dir('stateDir');
 const PROCESSED = join(STATE, 'processed.json');
 
+// ★ THE HARD REQUIREMENT, SAID OUT LOUD. Intake is JMAP, and the only JMAP dialect this file speaks
+// is Fastmail's. Membership is MailerLite, equally hardcoded. Neither is a config hook the way the
+// SEND is — swapping either means writing code. config.mailboxProvider used to sit in the defaults
+// marked "informational" and read by nothing, which is the same as not documenting the constraint at
+// all: a reader on another host got a confusing JMAP error instead of "this repo does not support
+// your mailbox yet." Refuse early and say which one it is.
+const SUPPORTED_PROVIDERS = ['fastmail'];
+if (!SUPPORTED_PROVIDERS.includes(String(config.mailboxProvider || '').toLowerCase())) {
+  console.error(
+    `config.mailboxProvider is "${config.mailboxProvider}" — intake only speaks ${SUPPORTED_PROVIDERS.join(', ')}.\n` +
+    'This script is hardcoded to Fastmail JMAP (config.mailApiBase) for reading mail and to MailerLite\n' +
+    'for list membership. Supporting another provider is a code change, not a config change — see\n' +
+    'docs/PORTING.md. The daily SEND is a config hook and is unaffected.');
+  process.exit(2);
+}
+
 let JMAP_TOKEN, ML_KEY;
 try { JMAP_TOKEN = readCredential('jmapTokenPath'); ML_KEY = readCredential('mailerliteKeyPath'); }
 catch (e) { console.error(e.message); process.exit(2); }

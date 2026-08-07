@@ -60,15 +60,15 @@ Your entire world is this folder. Read:
   appear in the issue — do not reach for anything you merely remember or assume.
 - \`DIGEST-WRITER-CONTRACT.md\` — the voice and the laws. They bind you. Read before writing.
 - \`PUBLIC-SURFACES.md\` — the map of every public page and repo you are allowed to link. **Read it
-  before you write the opening**, because law 8 below requires a link and this file is the only place
-  you can learn what exists. \`TONE.md\` and \`BEATS.md\` are here too, referenced by the contract.
+  before you write the opening**, because the link law below requires a link and this file is the only
+  place you can learn what exists. \`TONE.md\` and \`BEATS.md\` are here too, referenced by the contract.
 
 Write \`DIGEST.md\` in this folder, in exactly this shape:
 
 \`\`\`
 # <headline — plain, specific, no hype; what the day actually was>
 
-<!-- meta: date=${DATE} reconstructed=${facts.reconstructed ? 'true' : 'false'} kicker="From the shop" dek="<one sentence, plain>" -->
+<!-- meta: date=${DATE} reconstructed=${facts.reconstructed ? 'true' : 'false'} dek="<one sentence, plain>" tags="<1–3 slugs from the contract's tag table, space-separated>" -->
 
 <opening paragraphs: the day in the machine's own voice>
 
@@ -117,9 +117,11 @@ Write \`DIGEST.md\` in this folder, in exactly this shape:
    (a beat where the shop is quoting ITSELF) → start the quote line with \`>> \`; it renders in shop
    green. **Rust is ALWAYS the operator's voice, never the machine's.** A marker that disagrees with
    the beat's source refuses the run.
-${SITE_HOST ? `8. **Link the day's public face.** The topic hook must carry at least one link to your public site (\`${SITE_HOST}\`), not only to a code host — see PUBLIC-SURFACES.md for the map of what may be linked.` : ''}
-
-${SITE_HOST ? `8. **The issue MUST carry at least one in-body markdown link, and at least one of them MUST point
+8. **The meta line carries \`dek\` and \`tags\`, and NO \`kicker\`.** Tags come from the table in
+   \`DIGEST-WRITER-CONTRACT.md\` — one to three slugs, space-separated. The archive's tag filter is
+   built from this field alone, so an issue with no tags is invisible to every filter on the page.
+${SITE_HOST ? `
+9. **The issue MUST carry at least one in-body markdown link, and at least one of them MUST point
    at \`https://${SITE_HOST}/…\` (checked mechanically — this is the law that most often refuses a
    day).** The topic hook carries it: when the day's work has a public face, link that face. An
    off-site link alone does NOT satisfy this — a code host answers "where is the code," the site

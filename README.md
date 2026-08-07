@@ -60,7 +60,7 @@ reply gets an answer full of links that 404. The order is the fix, and it lives 
 
 ## The gates, and why there are so many
 
-The send door runs ten gates in order, all fail-closed. The ones worth knowing:
+The send door runs eleven gates in order (G0-G9, plus G6b), all fail-closed. The ones worth knowing:
 
 - **The redaction gate** hunts credential shapes, absolute paths, off-list dollar figures, denied
   names, out-of-scope subject matter, and whatever house-specific patterns you add to your denylist.
@@ -106,14 +106,21 @@ the right to answer anyone unwatched.
 ## Get started
 
 ```bash
-git clone <this repo>
+git clone https://github.com/nateislurking/the-press-room.git
 cd the-press-room
 node check.js                          # the consistency checker — should pass on a clean clone
 node bin/gate.mjs --self-test          # watch the redaction gate refuse what it must
-node bin/send-reply.mjs --self-test    # watch the send door's ten gates, on temp fixtures
+node bin/send-reply.mjs --self-test    # watch the send door's eleven gates, on temp fixtures
 bash examples/render-a-sample-issue.sh # see a real issue render, no model needed
-cp press-room.config.example.json press-room.config.json   # then edit it
+
+cp press-room.config.example.json press-room.config.json         # then edit it
+cp redaction/REDACTION.example.md redaction/REDACTION.md         # then FILL IT IN
 ```
+
+Do both `cp` lines. Until you do, every script prints a loud warning and runs on the shipped example
+values — the gate will report `SELF-TEST PASS` while knowing none of your names, prices, or paths.
+Writing your own denylist is the first real task, and there is no way to skip it quietly:
+[`docs/OPERATING.md`](docs/OPERATING.md) walks through what goes in it.
 
 Full run-it-day-to-day guide: [`docs/OPERATING.md`](docs/OPERATING.md). How it is shaped and why:
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). What protects you and what does not:
@@ -132,7 +139,7 @@ in the companion repo [`the-shop`](https://github.com/nateislurking/the-shop) un
 
 | | |
 |---|---|
-| `bin/` | the two pipelines — 18 small scripts, each with a header explaining what it is |
+| `bin/` | the two pipelines — 17 small scripts, each with a header explaining what it is |
 | `lib/` | the config loader, the shared kernel jail, the queue logic |
 | `contracts/` | what each contained model is told — the voice, the laws, the scope |
 | `redaction/` | the denylist. Copy the `.example` and write your own. |

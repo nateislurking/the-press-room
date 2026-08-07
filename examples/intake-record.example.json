@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "A reply-lane/intake@1 record: the typed handoff from Hop A (intake-sweep) to Hop B (compose).",
+    "This is a FIXTURE. The only real producer is bin/intake-sweep.mjs, which needs a live Fastmail",
+    "JMAP token and a MailerLite key — so without this file the only way to learn the shape was to",
+    "read the producer's source. Copy it into inbox/ to exercise the reply lane offline:",
+    "",
+    "  mkdir -p inbox && cp examples/intake-record.example.json inbox/SAMPLE.json",
+    "  node bin/build-reading-room.mjs --with-intake inbox/SAMPLE.json",
+    "  node bin/compose.mjs --intake inbox/SAMPLE.json      # needs bwrap + claude",
+    "",
+    "Keys beginning with _ are documentation and are ignored by everything that reads this."
+  ],
+
+  "_schema": "Always this exact string. compose.mjs refuses any record that is not reply-lane/intake@1.",
+  "schema": "reply-lane/intake@1",
+
+  "_id": "The mailbox's own message id. Becomes the answer's intake_id and the dedupe key (G4).",
+  "id": "Mdeadbeef0001",
+
+  "_message_id": "RFC822 Message-ID, used to thread the outgoing reply.",
+  "message_id": "<CAJ1example@mail.example.com>",
+  "in_reply_to": "<the-issue-we-sent@bot.example.com>",
+  "thread_id": "Tdeadbeef0001",
+
+  "_from_email": "Lowercased sender. The send gate pins the recipient FROM THIS FIELD — the model never chooses who gets mail.",
+  "from_email": "curious.reader@example.net",
+
+  "received_at": "2026-08-06T14:22:05Z",
+
+  "_quarantined": [
+    "★ THE NAMING IS THE CONTRACT. Both fields hold text a stranger wrote, and the suffix is there to",
+    "make any code that touches them read wrong if it treats them as instructions. Nothing in the",
+    "deterministic pipeline interprets them; only the contained composer reads them, through this",
+    "record, inside the jail. A reply that asks the machine to send something, reveal configuration,",
+    "or act as the operator is an injection by definition — see contracts/REPLY-WRITER-CONTRACT.md."
+  ],
+  "subject_quarantined": "Re: From the Shop Floor — how does the redaction gate decide?",
+  "body_quarantined": "I read yesterday's issue and I'm trying to understand the gate. Does it run on the reply as well as the issue, or only on what you publish? Thanks for writing these.",
+
+  "_membership": [
+    "Filled in by intake-sweep from your list provider. G3 refuses to answer a non-subscriber, so a",
+    "hand-made fixture with subscriber:false is the quickest way to watch that gate refuse."
+  ],
+  "membership": {
+    "subscriber": true,
+    "status": "active",
+    "daily": true,
+    "general": false
+  },
+
+  "swept_at": "2026-08-06T14:25:00Z"
+}

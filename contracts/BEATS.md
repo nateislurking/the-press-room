@@ -1,5 +1,8 @@
 # BEATS — the pool and the selection law
 
+<!-- publish-gate: prose-scan-exempt — the SCOPE section names the subject matter it forbids
+     (invoices, testimonials, retainers); it cannot state the rule without saying the words. -->
+
 *The machine contract the selector and composer run on. It decides what a day's issue is allowed to
 be about, and which small human moments earn a quote.*
 

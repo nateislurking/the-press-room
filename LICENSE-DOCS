@@ -6,5 +6,17 @@ as long as you give appropriate credit.
 
 Full text: https://creativecommons.org/licenses/by/4.0/legalcode
 
-The code (every .mjs / .js file and the systemd unit examples) is licensed
-under MIT instead — see LICENSE.
+Everything else in this repository is licensed under MIT instead — see LICENSE.
+"Everything else" means every file that is not a .md document, and it is meant
+to leave nothing unclassified:
+
+  - source code            .mjs and .js  (bin/, lib/, test/, check.js)
+  - shell scripts          examples/*.sh
+  - the systemd examples   units/*.service.example, units/*.timer.example
+  - configuration          press-room.config.example.json
+  - repository plumbing    .gitignore, .gitattributes
+
+The one deliberate wrinkle: redaction/REDACTION.example.md is a .md file, so it
+falls under CC BY 4.0 with the rest of the prose — but it is a starter template
+you are expected to replace with your own. Take it, rewrite it, no attribution
+needed for your own denylist.

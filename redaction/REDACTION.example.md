@@ -1,5 +1,8 @@
 # REDACTION — the denylist and the law (STARTER SHAPE — write your own)
 
+<!-- publish-gate: prose-scan-exempt — this file's JOB is to enumerate denied terms, so a scanner
+     reading it for denied terms is a category error. L1 and L3 still apply to it in full. -->
+
 > **⚠ This is a starting SHAPE, not a sufficient list.** It has the exact format the gate parses, and
 > a few obviously-fake examples. It does **not** know your names, your addresses, your prices, or your
 > paths. Copy it to the file named by `redactionFile` in your config (default `redaction/REDACTION.md`)

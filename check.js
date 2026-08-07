@@ -85,31 +85,77 @@ const walk = (rel, filter) => {
 })();
 
 // ---- 3. config keys: read by code <=> defined <=> documented ---------------
+//
+// THREE directions, not one. The header has always promised "and vice versa"; only the first leg was
+// ever implemented, and the documentation leg was a note() — printed, never failing. So a key could be
+// deleted from the example, or invented in the example and read by nobody, and this file still exited
+// 0. Both were reproduced on the shipped tree: senderAddress was documented, defaulted, and read by
+// NOTHING (the daily send is dispatched by an external hook), and mailboxProvider was defaulted and
+// read by nothing while being absent from the example entirely.
+//
+//   A. read by code      -> must be defined in DEFAULTS      (a typo'd key silently reads undefined)
+//   B. defined in DEFAULTS -> must be documented in example   (an undocumented knob is not a knob)
+//   C. documented in example -> must be read by code          (a dead knob is a promise nothing keeps)
 (function configKeys() {
-  checksRun++;
   const cfgSrc = read('lib/config.mjs') || '';
   const exampleSrc = read('press-room.config.example.json') || '';
-  // keys the code reads: config.X , dir('X') , cfgPath(config.X)
-  const read1 = new Set();
+
+  // keys the code reads: config.X , dir('X')
+  const readByCode = new Set();
   for (const cf of walk('bin', (p) => p.endsWith('.mjs')).concat(walk('lib', (p) => p.endsWith('.mjs')))) {
     const src = read(cf);
-    for (const m of src.matchAll(/(?<![.\w/'"-])config\.([a-zA-Z][a-zA-Z0-9]*)/g)) read1.add(m[1]);
-    for (const m of src.matchAll(/\bdir\(\s*['"]([a-zA-Z0-9]+)['"]\s*\)/g)) read1.add(m[1]);
+    for (const m of src.matchAll(/(?<![.\w/'"-])config\.([a-zA-Z][a-zA-Z0-9]*)/g)) readByCode.add(m[1]);
+    for (const m of src.matchAll(/\bdir\(\s*['"]([a-zA-Z0-9]+)['"]\s*\)/g)) readByCode.add(m[1]);
   }
-  // things that are not config keys (methods/exports on the config module)
-  // nested keys (documented under their parent) + filename fragments that can appear as "config.mjs"
-  // in a comment or a path string and are never config keys.
-  const notKeys = new Set(['credentials', 'sources', 'mailGroups', 'timezone', 'mjs', 'json', 'js', 'html', 'example']);
-  for (const key of read1) {
+
+  // Filename fragments the `config.X` regex picks up out of comments and path strings ("config.mjs",
+  // "config.json"). These are never config keys. NOTE what is NOT here any more: `timezone`, a real
+  // top-level scalar read in four scripts, which sat in this list and exempted itself from every leg.
+  const notKeys = new Set(['mjs', 'json', 'js', 'html', 'example']);
+
+  // Top-level keys actually declared in DEFAULTS, read from the source between `const DEFAULTS = {`
+  // and its closing brace, at one level of indentation only — nested keys belong to their parent.
+  const defaults = new Set();
+  const dBlock = cfgSrc.split(/const DEFAULTS = \{/)[1] || '';
+  let depth = 1;
+  for (const line of dBlock.split('\n')) {
+    const m = line.match(/^  ([a-zA-Z][a-zA-Z0-9]*)\s*:/);
+    if (depth === 1 && m) defaults.add(m[1]);
+    depth += (line.match(/[{[]/g) || []).length - (line.match(/[}\]]/g) || []).length;
+    if (depth <= 0) break;
+  }
+
+  // Top-level keys in the example, minus the `_`-prefixed documentation entries.
+  let example = new Set();
+  try { example = new Set(Object.keys(JSON.parse(exampleSrc)).filter((k) => !k.startsWith('_'))); }
+  catch (e) { fail('config', `press-room.config.example.json is not valid JSON: ${e.message}`, 'fix the JSON'); }
+
+  const documented = (k) => example.has(k) || new RegExp(`"_${k}"`).test(exampleSrc);
+
+  // --- A. read by code -> defined -----------------------------------------------------------
+  for (const key of readByCode) {
     if (notKeys.has(key)) continue;
-    if (!new RegExp(`\\b${key}\\s*:`).test(cfgSrc)) fail('config', `code reads config.${key} but lib/config.mjs defines no such default`, `add ${key} to DEFAULTS in lib/config.mjs`);
-    else checksRun++;
-    // documentation: the example should mention the key (as a key or a _doc). Nested keys live under
-    // credentials/sources/mailGroups and are documented there, so only flag top-level ones.
-    if (!new RegExp(`"${key}"`).test(exampleSrc) && !new RegExp(`"_${key}"`).test(exampleSrc)) {
-      // allow keys that are internal-only defaults not meant for the example (none right now)
-      notes.push(`config.${key} is read by the code and defaulted, but not shown in press-room.config.example.json`);
-    }
+    checksRun++;
+    if (!defaults.has(key)) fail('config', `code reads config.${key} but lib/config.mjs DEFAULTS defines no such key`,
+      `add ${key} to DEFAULTS in lib/config.mjs, or fix the misspelling at the read site`);
+  }
+
+  // --- B. defined -> documented in the example ----------------------------------------------
+  for (const key of defaults) {
+    checksRun++;
+    if (!documented(key)) fail('config', `lib/config.mjs defines config.${key} but press-room.config.example.json never mentions it`,
+      `add "${key}" (and a "_${key}" line saying what it does) to press-room.config.example.json, or drop the default`);
+  }
+
+  // --- C. documented -> read by code ---------------------------------------------------------
+  // The leg the header promised and the file never had. A key in the example is a promise to the
+  // reader that setting it does something; if nothing reads it, that promise is false.
+  for (const key of example) {
+    checksRun++;
+    if (!readByCode.has(key)) fail('config', `press-room.config.example.json documents "${key}" but no code in bin/ or lib/ ever reads config.${key}`,
+      `wire ${key} up at the place it is supposed to matter, or delete it from the example and from DEFAULTS`);
+    if (!defaults.has(key)) fail('config', `press-room.config.example.json documents "${key}" but lib/config.mjs DEFAULTS has no such key`,
+      `add ${key} to DEFAULTS so an absent config still boots, or remove it from the example`);
   }
 })();
 
@@ -129,8 +175,37 @@ const walk = (rel, filter) => {
   for (const st of [['bin/gate.mjs', '--self-test'], ['bin/send-reply.mjs', '--self-test'], ['bin/check-attribution.mjs', '--self-test']]) {
     checksRun++;
     try { execFileSync('node', st, { cwd: ROOT, stdio: 'pipe' }); }
-    catch (e) { fail('self-test', `${st.join(' ')} did not pass`, ((e.stdout || '') + (e.stderr || '')).toString().trim().slice(-300)); }
+    catch (e) {
+      // Print the lines that FAILED. This used to be .slice(-300) — the tail of the output, which in
+      // a self-test that prints one line per case is the last few PASSING cases. It reliably showed
+      // everything except the thing that broke.
+      const out = ((e.stdout || '') + (e.stderr || '')).toString();
+      const bad = out.split('\n').filter((l) => /✗|MISSED|FAIL|Error/.test(l));
+      fail('self-test', `${st.join(' ')} did not pass`,
+        (bad.length ? bad : out.trim().split('\n').slice(0, 6)).join('\n              ').slice(0, 800));
+    }
   }
+})();
+
+// ---- 5. the digest contract's tag table matches the archive's vocabulary ----
+// A pair created by fixing the dead `see bin/build-site-archive.mjs` reference: the composer is jailed,
+// so the tag vocabulary had to be written into the contract, which means the same list now lives in
+// two files. That is precisely the shape this checker exists to police.
+(function tagVocabularyAgrees() {
+  checksRun++;
+  const archive = read('bin/build-site-archive.mjs') || '';
+  const contract = read('contracts/DIGEST-WRITER-CONTRACT.md') || '';
+  const block = (archive.split('const TAG_LABEL = new Map([')[1] || '').split(']);')[0];
+  const inCode = [...block.matchAll(/\[\s*'([a-z-]+)'/g)].map((m) => m[1]);
+  const inContract = [...contract.matchAll(/^\s*\|\s*`([a-z-]+)`\s*\|/gm)].map((m) => m[1]);
+  if (!inCode.length) return fail('tags', 'could not find TAG_LABEL in bin/build-site-archive.mjs', 'has the map been renamed?');
+  if (!inContract.length) return fail('tags', 'could not find the tag table in contracts/DIGEST-WRITER-CONTRACT.md', 'has the table been removed?');
+  const missing = inCode.filter((t) => !inContract.includes(t));
+  const extra = inContract.filter((t) => !inCode.includes(t));
+  if (missing.length) fail('tags', `TAG_LABEL has ${missing.join(', ')} but the writer's contract does not offer ${missing.length > 1 ? 'them' : 'it'}`,
+    'add the row to the table in contracts/DIGEST-WRITER-CONTRACT.md — the composer cannot pick a tag it was never shown');
+  if (extra.length) fail('tags', `the writer's contract offers ${extra.join(', ')} but TAG_LABEL does not carry ${extra.length > 1 ? 'them' : 'it'}`,
+    'add it to TAG_LABEL in bin/build-site-archive.mjs — the archive drops unknown tags with a warning');
 })();
 
 // ---- report -----------------------------------------------------------------
