@@ -12,9 +12,19 @@ running system that sends real email on a timer, and it can ship without rewirin
 for a publishing convenience. The alternative — making the public tree the source of truth the private
 shop imports from — trades that safety for no-drift, and it is a separate decision, not made here.
 
-> **Open question for the owner:** whether this stays a snapshot or becomes the source of truth is a
-> decision that was deliberately left open when this repo was built. Until it is ruled, treat this as a
-> snapshot: re-port changes forward by hand, and do not assume the private shop reads from here.
+> **✅ RULED 2026-08-08 — it stays a snapshot, trued up QUARTERLY.** The open question this paragraph
+> used to carry is closed. The private shop keeps running its own copy and does not read from here; a
+> full sweep reconciles the drift once a quarter, in one pass.
+>
+> **What that means for you, plainly:** the running shop is usually **ahead** of this repo, and the
+> gap is real rather than cosmetic — between true-ups, live fixes and whole new stages can exist there
+> and not here. `ARCHITECTURE.md` says so wherever a stage is designed-but-not-shipped, and it is kept
+> honest on purpose.
+>
+> **One exception to the quarterly cadence**, because it is the one that would cost you: a change ships
+> here *immediately* when the published version is **broken or misleading** — a reader following the
+> README hits a wall, or a document claims a protection the code does not actually deliver. Those are
+> defects in the gift, not improvements to it, and they do not wait for a calendar.
 
 ## How the port was done
 
