@@ -1,5 +1,9 @@
 # The Press Room
 
+> **Retired November 18, 2026.** My shop no longer runs these two machines: the daily journal has
+> ended, and replies to it are no longer answered. The code stays here, free under its license, as it
+> was. It won't be updated.
+
 **Two machines that let a one-person shop publish, in public, without leaking.**
 
 The first writes a short daily journal of what your shop actually did — the machines describing their
